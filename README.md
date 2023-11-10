@@ -94,3 +94,6 @@ SPOTIFY_CLIENT_SECRET=(Spotify client secret) #if you don't want to use mongo th
 ### 5. Finishing
 
 > after all done, then Stalker Bot should be appear and can be used!
+
+
+> All PRs all welcome!
