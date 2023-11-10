@@ -7,18 +7,16 @@ const command : Command = {
     name: "checkstatus",
     execute: async (message, args) => {
         try {
-            if (mongoose.connection.readyState === 0) return
-            
-            let options
+            if (!message.guild) return
 
-            if (message.guild){
-                const guildoptions = await getAllGuildOption(message.guild)
-                if (guildoptions) options = guildoptions
-            }
+            const guildoptions = await getAllGuildOption(message.guild)
+            if (!guildoptions) return
+
+            const options = guildoptions
     
             const statuslist = 
                 `
-                **detect voice**: ${options?.detectvoice}\r
+                **detect presence**: ${options.detectpresence}\r
                 **notify**: ${options?.notify}\r
                 **channel**: <#${options?.channel}>
                 `

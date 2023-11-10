@@ -4,7 +4,7 @@ import { IGuild } from "../types";
 const GuildSchema = new Schema<IGuild>({
     guildID: {required:true, type: String},
     options: {
-        detectvoice: {type: Boolean, default: false},
+        detectpresence: {type: Boolean, default: false},
         notify: {type: Boolean, default: false},
         channel: {type: String, default: "default"}
     }

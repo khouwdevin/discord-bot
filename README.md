@@ -7,7 +7,7 @@
 <h3 align="center">Bot's Presence Example</h3>
 
 <div align="center">
-  <img src="https://github.com/khouwdevin/stalker-discord/blob/master/images/stalker-presence.png"/>
+  <img src="https://github.com/khouwdevin/discord-bot/blob/master/images/stalker-presence.png"/>
 </div>
 
 ## How to Run Discord Bot
@@ -45,6 +45,29 @@ npm run build
 2. Upload the /dist/ folder.
 3. Set node start to index.js inside host server setting.
 
+#### Set Up Environment Variables
+
+> (local hosting) put the environment variables inside working directory and name the file to .env <br/>
+> (using hosting provider) put the environment variables inside setting of environment variables
+
+```env
+TOKEN=(Discord bot token)
+CLIENT_ID=(Discord client id)
+BOT_NAME=(Bot name)
+PREFIX_COMMAND=$ #default prefix is $
+MONGO_URI=(Mongo DB url) #if you don't want to use mongo then let it empty
+MONGO_DATABASE_NAME=(Mongo Database name) #if you don't want to use mongo then let it empty
+BOT_DATABASE=(DB name in Mongo DB) #if you don't want to use mongo then let it empty
+LAVALINK_PASSWORD=(Lavalink password)
+LAVALINK_PORT=(Lavalink port)
+LAVALINK_HOST=(Lavalink host or domain that used by Lavalink server)
+LAVALINK_IDENTIFIER=(Fill it same as lavalink host)
+SPOTIFY_CLIENTID=(Spotify client id) #if you don't want to use spotify then let it empty
+SPOTIFY_CLIENT_SECRET=(Spotify client secret) #if you don't want to use mongo then let it empty
+```
+
+> you can get Spotify client id and client secret from https://developer.spotify.com
+
 ### 4. Set up Lavalink
 
 #### Host Locally
@@ -68,28 +91,6 @@ git clone https://github.com/khouwdevin/lavalink-template.git
 2. change the application.yml
 
 3. let the hosting provider clone and buld it for you
-
-#### Set Up Environment Variables
-
-> (local hosting) put the environment variables inside working directory and name the file to .env <br/>
-> (using hosting provider) put the environment variables inside setting of environment variables
-
-```env
-TOKEN=(Discord bot token)
-CLIENT_ID=(Discord client id)
-PREFIX_COMMAND=$ #default prefix is $
-MONGO_URI=(Mongo DB url) #if you don't want to use mongo then let it empty
-MONGO_DATABASE_NAME=(Mongo Database name) #if you don't want to use mongo then let it empty
-STALKER_DATABASE=(DB name in Mongo DB) #if you don't want to use mongo then let it empty
-LAVALINK_PASSWORD=(Lavalink password)
-LAVALINK_PORT=(Lavalink port)
-LAVALINK_HOST=(Lavalink host or domain that used by Lavalink server)
-LAVALINK_IDENTIFIER=(Fill it same as lavalink host)
-SPOTIFY_CLIENTID=(Spotify client id) #if you don't want to use spotify then let it empty
-SPOTIFY_CLIENT_SECRET=(Spotify client secret) #if you don't want to use mongo then let it empty
-```
-
-> you can get Spotify client id and client secret from https://developer.spotify.com
 
 ### 5. Finishing
 

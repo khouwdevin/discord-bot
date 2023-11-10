@@ -7,22 +7,23 @@ const event: BotEvent = {
     execute: async (message: Message) => {
         if (!message.member || message.member.user.bot) return;
         if (!message.guild) return;
-        let prefix = process.env.PREFIX_COMMAND
+        const prefix = process.env.PREFIX_COMMAND
 
         if (!message.content.startsWith(prefix)) return;
         if (message.channel.type !== ChannelType.GuildText) return;
 
-        let args = message.content.substring(prefix.length).split(" ")
+        const args = message.content.substring(prefix.length).split(" ")
         let command = message.client.commands.get(args[0])
 
         if (!command) {
-            let commandFromAlias = message.client.commands.find((command) => command.aliases.includes(args[0]))
-            if (commandFromAlias) command = commandFromAlias
-            else return;
+            const commandFromAlias = message.client.commands.find((command) => command.aliases.includes(args[0]))
+            if (!commandFromAlias) return
+            
+            command = commandFromAlias
         }
 
-        let cooldown = message.client.cooldowns.get(`${command.name}-${message.member.user.username}`)
-        let neededPermissions = checkPermissions(message.member, command.permissions)
+        const cooldown = message.client.cooldowns.get(`${command.name}-${message.member.user.username}`)
+        const neededPermissions = checkPermissions(message.member, command.permissions)
         if (neededPermissions !== null)
             return sendTimedMessage(
             `

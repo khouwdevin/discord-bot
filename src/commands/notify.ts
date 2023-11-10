@@ -7,9 +7,7 @@ const command: Command = {
     name: "notify",
     execute: async (message, args) => {
         try {
-            if (mongoose.connection.readyState === 0) return
-            
-            let notify = args[1]
+            const notify = args[1]
         
             if (!notify) return message.channel.send("No status is provided")
             if (notify !== "true" && notify !== "false") return message.channel.send("Please provide only true or false!")

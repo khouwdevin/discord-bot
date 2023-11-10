@@ -15,8 +15,8 @@ const command : Command = {
                 example => **'${prefix}channelconfig 12344556677'** or **'${prefix}cfg 12344556677'**\r
                 **${prefix}checkstatus**: If you want to check ${botname}'s config.\r
                 example => **'${prefix}checkstatus'** or **'${prefix}cs'**\r
-                **${prefix}detectvoice**: If you want to disable or enable detect voice.\r
-                example => **'${prefix}detectvoice false'** or **'${prefix}dv false'**\r
+                **${prefix}detectpresence**: If you want to disable or enable detect presence.\r
+                example => **'${prefix}detectpresence false'** or **'${prefix}dp false'**\r
                 **${prefix}greet**: ${botname} will greet you!\r
                 example => **'${prefix}greet'** or **'${prefix}g'**\r
                 **${prefix}notify**: If you want to disable or enable ${botname} online notif.\r

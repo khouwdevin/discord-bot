@@ -1,5 +1,5 @@
 import chalk from "chalk"
-import { Channel, ChannelManager, ChannelType, Client, Guild, GuildMember, Message, PermissionFlagsBits, PermissionResolvable, TextChannel } from "discord.js"
+import { ChannelManager, ChannelType, Client, Guild, GuildMember, Message, PermissionFlagsBits, PermissionResolvable, TextChannel } from "discord.js"
 import GuildDB from "./schemas/Guild"
 import { GuildOption } from "./types"
 import mongoose from "mongoose";
@@ -32,86 +32,27 @@ export const checkPermissions = (member: GuildMember, permissions: Array<Permiss
 
 export const sendTimedMessage = (message: string, channel: TextChannel, duration: number) => {
     channel.send(message)
-        .then(m => setTimeout(async () => (await channel.messages.fetch(m)).delete().catch((e) => {console.log(`❌ Failed to delete message : ${e.message}`)}), duration))
+        .then(m => setTimeout(async () => 
+            (await channel.messages.fetch(m))
+            .delete()
+            .catch((e) => console.log(color("text", `❌ Failed to delete message : ${color("error", e.message)}`)))
+        , duration))
     return
 }
 
 export const sendMessage = (message: string, channel: TextChannel) => {
-    channel.send(message).catch((e) => {console.log(`❌ Failed to send message : ${e.message}`)})
-}
-
-export const sendMessageByChannelName = async (message: string, channelname: string, channels: ChannelManager) => {
-    let channelid = ""
-
-    for (let i = 0; i < channels.cache.size; i++) {
-        const channel = channels.cache.at(i) as Channel
-
-        if (channel.type === ChannelType.GuildText && (channel as TextChannel).name === channelname) {
-            channelid = channel.id
-
-            break
-        }   
-    }
-
-    if (channelid.length > 0) {
-        (await channels.fetch(channelid) as TextChannel).send(message)
-    }
-    else {
-        for (let i = 0; i < channels.cache.size; i++){
-            const channelGuild = channels.cache.at(i)
-
-            if (channelGuild?.type === ChannelType.GuildText) {
-                const channel = channelGuild.guild.systemChannel ? channelGuild.guild.systemChannel : channelGuild
-                channel.send(`${channelname} channel isn't found! Please create one!`)
-
-                break
-            }
-        }
-    }
-}
-
-export const sendTimedMessageByChannelName = async (message: string, channelname: string, duration: number, channels: ChannelManager) => {
-    let channelid = ""
-    
-    for (let i = 0; i < channels.cache.size; i++) {
-        const channel = channels.cache.at(i) as Channel
-
-        if (channel.type === ChannelType.GuildText && (channel as TextChannel).name === channelname) {
-            channelid = channel.id
-
-            break
-        }   
-    }
-
-    if (channelid.length > 0) {
-        const channel = await channels.fetch(channelid) as TextChannel
-
-        channel.send(message)
-            .then(m => setTimeout(async () => (await channel.messages.fetch(m)).delete().catch((e) => {console.log(`❌ Failed to delete message : ${e.message}`)}), duration))
-    }
-    else {
-        for (let i = 0; i < channels.cache.size; i++){
-            const channelGuild = channels.cache.at(i)
-
-            if (channelGuild?.type === ChannelType.GuildText) {
-                const channel = channelGuild.guild.systemChannel ? channelGuild.guild.systemChannel : channelGuild
-                channel.send(`${channelname} channel isn't found! Please create one!`)
-                    .then(m => {setTimeout(async () => (await channel.messages.fetch(m)).delete().catch((e) => {console.log(`❌ Failed to delete message : ${e.message}`)}), 4000)})
-
-                break
-            }
-        }
-    }
+    channel.send(message).catch((e) => console.log(color("text", `❌ Failed to delete message : ${color("error", e.message)}`)))
 }
 
 export const sendMessageToExistingChannel = (channels: ChannelManager, message: string) => {
     for (let i = 0; i < channels.cache.size; i++){
         const channelGuild = channels.cache.at(i)
 
-        if (channelGuild?.type === ChannelType.GuildText) {
-            const channel = channelGuild.guild.systemChannel ? channelGuild.guild.systemChannel : channelGuild
-            return channel.send(message)
-        }
+        if (!channelGuild) continue
+        if (channelGuild.type !== ChannelType.GuildText) continue
+
+        const channel = channelGuild.guild.systemChannel ? channelGuild.guild.systemChannel : channelGuild
+        return channel.send(message).catch((e) => console.log(color("text", `❌ Failed to send message : ${color("error", e.message)}`)))
     }
 }
 
@@ -119,9 +60,63 @@ export const sendTimedMessageToExistingChannel = (channels: ChannelManager, mess
     for (let i = 0; i < channels.cache.size; i++){
         const channelGuild = channels.cache.at(i)
 
-        if (channelGuild?.type === ChannelType.GuildText) {
-            const channel = channelGuild.guild.systemChannel ? channelGuild.guild.systemChannel : channelGuild
-            return channel.send(message).then((m) => setTimeout(() => m.delete(), duration))
+        if (!channelGuild) continue
+        if (channelGuild.type !== ChannelType.GuildText) continue
+
+        const channel = channelGuild.guild.systemChannel ? channelGuild.guild.systemChannel : channelGuild
+        return channel.send(message).then((m) => setTimeout(() => m.delete(), duration)).catch((e) => console.log(color("text", `❌ Failed to send message : ${color("error", e.message)}`)))
+    }
+}
+
+export const sendNotifyBotOnline = async (client: Client) => {
+    const guilds = client.guilds.cache
+
+    for (let i = 0; i < guilds.size; i++) {
+        const guild = guilds.at(i) as Guild
+        const channelId = await getGuildOption(guild, "channel")
+        const notify = await getGuildOption(guild, "notify")
+
+        if (!notify) continue
+
+        if (channelId === "default") {
+            if (!guild.systemChannel) {
+                const channels = guild.channels
+                sendTimedMessageToExistingChannel(channels, `Please add or update default text channel to ${process.env.BOT_NAME}'s config!`, 10000)
+
+                continue 
+            }
+
+            const channel = guild.systemChannel as TextChannel
+            sendTimedMessage(`${process.env.BOT_NAME} is back online!`, channel, 5000)
+
+            continue
+        }
+        if (channelId) {
+            const channel = guild.channels.cache.find(c => c.id === channelId)
+
+            if (!channel || channel.type !== ChannelType.GuildText) {
+                const channels = guild.channels
+                sendTimedMessageToExistingChannel(channels, `Please add or update default text channel to ${process.env.BOT_NAME}'s config!`, 10000)
+
+                continue
+            }
+
+            sendTimedMessage(`${process.env.BOT_NAME} is back online!`, channel, 5000)
+
+            continue
+        }
+
+        const channels = guild.channels.cache
+
+        for (let j = 0; j < channels.size; j++) {
+            const channel = channels.at(j)
+            
+            if (!channel) continue
+            if (channel.type !== ChannelType.GuildText) continue
+            
+            sendTimedMessage(`${process.env.BOT_NAME} is back online!`, channel, 5000)
+
+            break
         }
     }
 }
@@ -130,37 +125,41 @@ export const notifyToConfigDefaultTextChannel = (channels: ChannelManager) => {
     for (let i = 0; i < channels.cache.size; i++){
         const channelGuild = channels.cache.at(i)
 
-        if (channelGuild?.type === ChannelType.GuildText) {
-            const channel = channelGuild.guild.systemChannel ? channelGuild.guild.systemChannel : channelGuild
-            return channel.send(`Please add default text channel to ${process.env.BOT_NAME}'s config!`).then((m) => setTimeout(() => m.delete(), 10000))
-        }
+        if (!channelGuild) continue
+        if (channelGuild.type !== ChannelType.GuildText) continue
+        if (!channelGuild.guild.systemChannel) return sendTimedMessageToExistingChannel(channels, `Please add or update default text channel to ${process.env.BOT_NAME}'s config!`, 10000)
+            
+        const channel = channelGuild.guild.systemChannel
+        return channel.send(`Please add or update default text channel to ${process.env.BOT_NAME}'s config!`)
+            .then((m) => setTimeout(() => m.delete(), 10000))
+            .catch(() => console.log(color("text", `❌ Failed to ${color("error", "notify config default message")}`)))
     }
 }
 
 export const deleteTimedMessage = (message: Message, channel: TextChannel, duration: number) => {
     setTimeout(
-        async () => {
-            (await channel.messages.fetch(message)).delete().catch((e) => {console.log(`❌ Failed to delete message : ${e.message}`)})
-        }
+        async () => (await channel.messages.fetch(message))
+            .delete()
+            .catch((e) => console.log(color("text", `❌ Failed to delete message : ${color("error", e.message)}`)))
     , duration)
 }
 
 export const getGuildOption = async (guild: Guild, option: GuildOption) => {
-    if (mongoose.connection.readyState === 0) throw new Error("Database not connected.")
+    if (mongoose.connection.readyState === 0) return console.log(color("text", `❌ Database ${color("error", "not connected")}`))
     let foundGuild = await GuildDB.findOne({ guildID: guild.id })
     if (!foundGuild) return null;
     return foundGuild.options[option]
 }
 
 export const getAllGuildOption = async (guild: Guild) => {
-    if (mongoose.connection.readyState === 0) throw new Error("Database not connected.")
+    if (mongoose.connection.readyState === 0) return console.log(color("text", `❌ Database ${color("error", "not connected")}`))
     let foundGuild = await GuildDB.findOne({ guildID: guild.id })
     if (!foundGuild) return null;
     return foundGuild.options
 }
 
 export const setGuildOption = async (guild: Guild, option: GuildOption, value: any) => {
-    if (mongoose.connection.readyState === 0) throw new Error("Database not connected.")
+    if (mongoose.connection.readyState === 0) return console.log(color("text", `❌ Database ${color("error", "not connected")}`))
     let foundGuild = await GuildDB.findOne({ guildID: guild.id })
     if (!foundGuild) return null;
     foundGuild.options[option] = value
@@ -168,63 +167,9 @@ export const setGuildOption = async (guild: Guild, option: GuildOption, value: a
 }
 
 export const getAllGuild = async () => {
-    if (mongoose.connection.readyState === 0) throw new Error("Database not connected.")
+    if (mongoose.connection.readyState === 0) return console.log(color("text", `❌ Database ${color("error", "not connected")}`))
     const guilds = await GuildDB.find()
     return guilds
-}
-
-export const getChannelIdbyName = (channels: ChannelManager, name: string): Promise<string> => {
-    let id = ""
-    const guildChannels = channels.cache
-
-    for (let i = 0; i < guildChannels.size; i++) {
-        const channel = guildChannels.at(i)
-        if (channel && (channel as TextChannel).name === name) {
-            id = channel.id
-
-            break
-        }
-    }
-
-    return Promise.resolve(id)
-}
-
-export const sendNotifyBotOnline = async (client: Client) => {
-    const guildsList: Guild[] = []
-    const channelList: TextChannel[] = []
-    const guilds = client.guilds.cache
-
-    for (let i = 0; i < guilds.size; i++) {
-        if (!guildsList.includes(guilds.at(i) as Guild)) {
-            guildsList.push(guilds.at(i) as Guild)
-            const guild = guilds.at(i) as Guild
-            const channels =  guild.channels.cache
-
-            for (let j = 0; j < channels.size; j++) {
-                const channel = channels.at(j)
-
-                if (channel?.type === ChannelType.GuildText) {
-                    channelList.push(channels.at(j) as TextChannel)
-
-                    break
-                }
-            }
-        }        
-    }
-    
-    for (let i = 0; i < guildsList.length; i++) {
-        const guild = guildsList.at(i) as Guild
-        const channelGuild = channelList.at(i)
-
-        const notify = await getGuildOption(guild, "notify")
-
-        if (notify) {
-            if (channelGuild) {
-                const channel = guild.systemChannel ? guild.systemChannel : channelGuild
-                sendTimedMessage(`${process.env.BOT_NAME} is back online!`, channel, 5000)
-            }
-        }
-    }
 }
 
 export const getDateChoices = (): Array<string> => {

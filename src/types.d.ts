@@ -21,7 +21,7 @@ export interface Command {
 
 interface GuildOptions {
     notify: Boolean,
-    detectvoice: Boolean,
+    detectpresence: Boolean,
     channel: String
 }
 
