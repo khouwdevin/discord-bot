@@ -1,6 +1,6 @@
 # Discord Bot
 
-> Bot for who need save log, server management and a music bot.
+> Discord bot that is ready to be deployed.
 
 ## Bot
 
