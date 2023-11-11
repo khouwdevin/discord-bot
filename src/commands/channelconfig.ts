@@ -11,7 +11,7 @@ const command: Command = {
 
             if (!channelid) return message.channel.send("No channel is provided!")
             if (!message.guild) return sendTimedMessage("Some error is occured!", channel as TextChannel, 5000)
-            if (!message.guild?.channels.cache.find((c) => c.id === channelid)) return sendTimedMessage("Channel not found! Please provide an existing text channel!", channel as TextChannel, 10000)
+            if (!message.guild.channels.cache.find((c) => c.id === channelid)) return sendTimedMessage("Channel not found! Please provide an existing text channel!", channel as TextChannel, 10000)
 
             setGuildOption(message.guild, "channel", channelid)
             sendTimedMessage("Channel config successfully changed!", channel as TextChannel, 5000)
