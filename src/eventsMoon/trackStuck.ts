@@ -5,7 +5,7 @@ import { ChannelType, Client, EmbedBuilder } from "discord.js";
 const event: MoonEvent = {
     name: "trackStuck",
     execute: async (client: Client, player: MoonlinkPlayer, track: any) => {
-        const channel = await client.channels.fetch(player.textChannel)
+        const channel = client.channels.cache.find(c => c.id === player.textChannel)
 
         if (!channel || channel.type !== ChannelType.GuildText) return
 

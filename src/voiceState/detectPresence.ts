@@ -9,8 +9,8 @@ const DetectPresence = async (voiceState: VoiceState, option: number) => {
         if (voiceState.client.user === voiceState.member.user) return
 
         const channelGuildId = await getGuildOption(voiceState.guild, "channel")
-        const channel = channelGuildId === "default" ? voiceState.guild.systemChannel : await voiceState.guild.channels.fetch(channelGuildId as string)
-            
+        const channel = channelGuildId === "default" ? voiceState.guild.systemChannel : voiceState.guild.channels.cache.find(c => c.id === channelGuildId)
+
         if (!channel) return notifyToConfigDefaultTextChannel(voiceState.guild.channels)
 
         if (option === 0) sendMessage(`${voiceState.member?.user} left ${voiceState.channel} channel!`, channel as TextChannel)
