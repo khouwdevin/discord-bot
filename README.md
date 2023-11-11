@@ -92,6 +92,10 @@ git clone https://github.com/khouwdevin/lavalink-template.git
 
 3. let the hosting provider clone and buld it for you
 
+#### Use Free Lavalink Server
+
+> pick one from and put the information to environment file [lavalink hosting](https://lavalink.darrennathanael.com/)
+
 ### 5. Finishing
 
 > after all done, then Stalker Bot should be appear and can be used!
