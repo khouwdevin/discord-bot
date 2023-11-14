@@ -27,15 +27,25 @@ catch(e) {
   throw e
 }
 
-const shardingManager = new ShardingManager("./build/pre-start.js", {
-    token: process.env.TOKEN,
-    totalShards: "auto"
-})
+const LaunchShard = async () => {
+  try {
+    const shardingManager = new ShardingManager("./build/pre-start.js", {
+      token: process.env.TOKEN,
+      totalShards: "auto"
+    })
+  
+    shardingManager.on("shardCreate", (shard) => {
+        console.log(
+            color("text", `🤖 Launched sharding manager ${color("variable", shard.id)} shard`)
+        )
+    })
 
-shardingManager.on("shardCreate", (shard) => {
+    await shardingManager.spawn()
+  } catch(e) {
     console.log(
-        color("text", `🤖 Launched sharding manager ${color("variable", shard.id)} shard`)
+      color("text", `❌ Launched sharding manager error :  ${color("error", e.message)}`)
     )
-})
+  }
+}
 
-shardingManager.spawn()
+LaunchShard()
