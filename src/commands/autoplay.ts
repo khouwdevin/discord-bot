@@ -1,4 +1,4 @@
-import { color, getLoopString, sendTimedMessage } from "../functions";
+import { color, getLoopString, getPlayerData, sendTimedMessage } from "../functions";
 import { Command } from "../types";
 import { EmbedBuilder, TextChannel } from "discord.js";
 
@@ -21,12 +21,7 @@ const command: Command = {
 
             player.setAutoPlay(autoplay === "true" ? true : false)
 
-            const playerData = `
-                autoplay: **${autoplay}**\r
-                volume: **${player.volume}**\r
-                loop: **${getLoopString(player.loop)}**\r
-                shufle: **${player.shuffled}**
-            `
+            const playerData = getPlayerData(player)
 
             const embed = new EmbedBuilder()
                 .setAuthor({ name: "Player Updated", iconURL: client.user.avatarURL() || undefined })

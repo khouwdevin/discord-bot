@@ -3,6 +3,7 @@ import { ChannelManager, ChannelType, Client, Guild, GuildMember, Message, Permi
 import GuildDB from "./schemas/Guild"
 import { GuildOption } from "./types"
 import mongoose from "mongoose";
+import { MoonlinkPlayer } from "moonlink.js";
 
 type colorType = "text" | "variable" | "error"
 
@@ -211,4 +212,13 @@ export const getLoopString = (loopState: number | null) => {
     else loop = "loop playlist"
 
     return loop
+}
+
+export const getPlayerData = (player: MoonlinkPlayer) => {
+    return `
+        autoplay: **${player.autoPlay}**\r
+        volume: **${player.volume}**\r
+        loop type: **${getLoopString(player.loop)}**\r
+        shufle: **${player.shuffled}**
+    `   
 }
