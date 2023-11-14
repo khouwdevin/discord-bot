@@ -27,7 +27,7 @@ catch(e) {
   throw e
 }
 
-const LaunchShard = async () => {
+(async () => {
   try {
     const shardingManager = new ShardingManager("./build/pre-start.js", {
       token: process.env.TOKEN,
@@ -46,6 +46,4 @@ const LaunchShard = async () => {
       color("text", `❌ Launched sharding manager error :  ${color("error", e.message)}`)
     )
   }
-}
-
-LaunchShard()
+})()
