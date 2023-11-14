@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, TextChannel, EmbedBuilder, ColorResolvable } from "discord.js"
 import { SlashCommand } from "../types";
+import { color } from "../functions";
 
 const command: SlashCommand = {
   command: new SlashCommandBuilder()
@@ -69,13 +70,13 @@ const command: SlashCommand = {
       let filtered: { name: string, value: string }[] = []
       for (let i = 0; i < choices.length; i++) {
         const choice = choices[i];
-        if (choice.name.includes(focusedValue)) filtered.push(choice);
+        if (choice.name.toLowerCase().includes(focusedValue.toLocaleLowerCase())) filtered.push(choice);
       }
       await interaction.respond(
         filtered
       );
-    } catch (error) {
-      console.log(`Error: ${error.message}`)
+    } catch (e) {
+      console.log(color("text", `❌ Embed error : ${color("error", e.message)}`))
     }
   },
   execute: async (interaction) => {
@@ -87,19 +88,20 @@ const command: SlashCommand = {
         const element = interaction.options.data[i];
         if (element.name && element.value) options[element.name] = element.value;
       }
-      if (options.thumbnail === "avatar" || options.thumbnail === "botavatar") options.thumbnail = (options.thumbnail === "avatar" ? interaction.user.avatarURL()?.toString() : interaction.client.user?.avatarURL()?.toString()) || ""
+      if (options.thumbnail === "avatar" || options.thumbnail === "botavatar") options.thumbnail = (options.thumbnail === "avatar" ? interaction.user.avatarURL() : interaction.client.user?.avatarURL()) || ""
       const embed = new EmbedBuilder()
-        .setColor(options.color.toString() as ColorResolvable)
-        .setTitle(options.title.toString())
-        .setDescription(options.description.toString())
-        .setAuthor({ name: interaction.user.username || 'Default Name', iconURL: interaction.user?.avatarURL() || undefined })
-        .setThumbnail(options.thumbnail.toString())
+        .setColor(options.color as ColorResolvable)
+        .setTitle(options.title as string)
+        .setDescription(options.description as string)
+        .setAuthor({ name: interaction.user.displayName || 'Default Name', iconURL: interaction.user?.avatarURL() || undefined })
+        .setThumbnail(options.thumbnail as string)
         .setTimestamp()
-        .setFooter({ text: "Test embed message", iconURL: interaction.user?.avatarURL() || undefined });
-      let selectedTextChannel = interaction.channel?.client.channels.cache.get(options.channel.toString()) as TextChannel
+        .setFooter({ text: `created by ${interaction.user.displayName}`, iconURL: interaction.user?.avatarURL() || undefined });
+      let selectedTextChannel = interaction.channel?.client.channels.cache.get(options.channel as string) as TextChannel
       selectedTextChannel.send({ embeds: [embed] });
       return interaction.editReply({ content: "Embed message successfully sent." })
     } catch (error) {
+      console.log(error)
       interaction.editReply({ content: "Something went wrong..." });
     }
 

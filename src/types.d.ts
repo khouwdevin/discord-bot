@@ -14,6 +14,7 @@ export interface SlashCommand {
 export interface Command {
     name: string,
     execute: (message: Message, args: Array<string>) => void,
+    button?: (interaction: ButtonInteraction) => void,
     permissions: Array<PermissionResolvable>,
     aliases: Array<string>,
     cooldown?: number,
@@ -48,6 +49,12 @@ export interface BotEvent {
 export interface MoonEvent {
     name: keyof MoonlinkEvents,
     execute: (...args?) => void
+}
+
+export interface IHelp {
+    title: string,
+    field: APIEmbedField[],
+    footer: EmbedFooterOptions
 }
 
 declare global {

@@ -98,7 +98,7 @@ git clone https://github.com/khouwdevin/lavalink-template.git
 
 ### 5. Finishing
 
-> after all done, then Stalker Bot should be appear and can be used!
+> after all done, then Bot should be appear and can be used!
 
 
 > All PRs all welcome!

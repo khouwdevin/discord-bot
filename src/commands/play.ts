@@ -1,43 +1,48 @@
-import { sendMessage, sendTimedMessage } from "../functions";
+import { color, getLoopString, sendMessage, sendTimedMessage } from "../functions";
 import { Command } from "../types";
-import { Colors, EmbedBuilder, TextChannel, resolveColor } from "discord.js";
+import { EmbedBuilder, TextChannel, resolveColor } from "discord.js";
 
 const command: Command = {
     name: "play",
     execute: async (message, args) => {
         try {
-            const lavalink = process.env.LAVALINK_HOST
-            if (!lavalink) return
-            
             const title = args.slice(1, args.length).join(" ")
 
             if (!title) return sendTimedMessage("Please provide a title!", message.channel as TextChannel, 5000)
-            if (!message.guild || !message.guild.id || !message.member) return sendTimedMessage("An error occured!", message.channel as TextChannel, 5000)
-            if (!message.member.voice.channel || !message.member.voice.channelId) return sendTimedMessage(`${message.member} is not joining any channel!`, message.channel as TextChannel, 5000)
+            if (!message.guild || !message.guildId || !message.member) return sendTimedMessage("An error occured!", message.channel as TextChannel, 5000)
+            if (!message.member.voice.channelId) return sendTimedMessage(`${message.member} is not joining any channel!`, message.channel as TextChannel, 5000)
 
             const client = message.client
-            const playerStatus = client.moon.players.get(message.guild.id)
 
-            const player = playerStatus !== null ? playerStatus :
-                client.moon.players.create({
-                    guildId: message.guild.id,
-                    voiceChannel: message.member.voice.channel.id,
-                    textChannel: message.channel.id
+            let player = client.moon.players.get(message.guildId)
+
+            if (!player) {
+                player = client.moon.players.create({
+                    guildId: message.guildId,
+                    voiceChannel: message.member.voice.channelId,
+                    textChannel: message.channel.id,
+                    autoPlay: false
                 })
 
-            if (!player.connected) {
-                player.connect({
-                    setDeaf: true,
-                    setMute: false
-                })
+                const playerData = `
+                    autoplay: **${player.autoPlay}**\r
+                    volume: **${player.volume}**\r
+                    loop: **${getLoopString(player.loop)}**\r
+                    shufle: **${player.shuffled}**
+                `
+
+                const embed = new EmbedBuilder()
+                    .setAuthor({ name: "Player Created", iconURL: client.user.avatarURL() || undefined })
+                    .setFields({ name: " ", value: playerData })
+                    .setFooter({ text: `${process.env.BOT_NAME.toUpperCase()} MUSIC` })
+                    .setColor("Purple")
+
+                message.channel.send({ embeds: [embed] })
             }
 
-            if (playerStatus && client.timeouts.has(`player-${player.guildId}`)) {
-                clearTimeout(client.timeouts.get(`player-${player.guildId}`))
-                client.timeouts.delete(`player-${player.guildId}`)
-            }
-
-            const processMessage = await message.channel.send("Processing...")
+            const embedProcess = new EmbedBuilder()
+                .setAuthor({ name: "Processing...", iconURL: client.user.avatarURL() || undefined })
+            const processMessage = await message.channel.send({ embeds: [embedProcess] })
 
             const res = await client.moon.search(title)
 
@@ -48,12 +53,12 @@ const command: Command = {
                     return sendMessage(`${message.member} no title matches!`, message.channel as TextChannel)
                 case "playlist":
                     let imageUrl = null
-                    let color = resolveColor(Colors.Red)
+                    let color = resolveColor("Red")
                     if (title.includes("spotify")) {
                         const resThumbnail = await fetch(`https://open.spotify.com/oembed?url=${title}`)
                         const data = await resThumbnail.json()
                         imageUrl = data.thumbnail_url
-                        color = resolveColor(Colors.Green)
+                        color = resolveColor("Green")
                     }
                     const embedPlaylist  = new EmbedBuilder()
                         .setFields(
@@ -75,17 +80,39 @@ const command: Command = {
 
                     const embedSong  = new EmbedBuilder()
                         .setAuthor({ name: `[${res.tracks[0].title}] was added to the waiting list!`, iconURL: message.client.user.avatarURL() || undefined })
+                        .setColor("Yellow")
                     message.channel.send({ embeds: [embedSong] })
 
                     break
             }
 
-            processMessage.delete()
+            if (client.timeouts.has(`player-${player.guildId}`)) {
+                clearTimeout(client.timeouts.get(`player-${player.guildId}`))
+                client.timeouts.delete(`player-${player.guildId}`)
+            }
+
+            await processMessage.delete()
+
+            if (!player.connected) {
+                player.connect({
+                    setDeaf: true,
+                    setMute: false
+                })                
+            }
+
+            if (player && (player.voiceChannel !== message.member.voice.channelId)) {
+                player.setVoiceChannel(message.member.voice.channelId)
+                
+                player.connect({
+                    setDeaf: true,
+                    setMute: false
+                }) 
+            }
 
             if (!player.playing) player.play()
             
             client.attemps.set(`${player.guildId}`, 3)
-        } catch {}
+        } catch(e) {console.log(color("text", `❌ Failed to play music : ${color("error", e.message)}`))}
     },
     cooldown: 1,
     permissions: [],

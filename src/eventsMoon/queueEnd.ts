@@ -6,8 +6,8 @@ const event: MoonEvent = {
     name: "queueEnd",
     execute: async (client: Client, player: MoonlinkPlayer, track: any) => {
         
-        const timeout = setTimeout(() => {
-            player.disconnect()
+        const timeout = setTimeout( async () => {
+            await player.stop(true)
             client.timeouts.delete(`player-${player.guildId}`)
         }, 20000)
 

@@ -6,8 +6,8 @@ const event: MoonEvent = {
     name: "nodeReconnect",
     execute: (node: MoonlinkNode) => {
         console.log(
-            color("text", `💪 Node is back connected to ${color("variable", node.host)}`)
-        )
+            color("text", `🔃 Reconnecting to ${color("variable", node.host)}`)
+        ) 
     }
 }
 

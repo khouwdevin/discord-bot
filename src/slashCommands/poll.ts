@@ -1,7 +1,6 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, EmbedFooterData, SlashCommandBuilder } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder } from "discord.js";
 import { SlashCommand } from "../types";
 import PollModel from "../schemas/Poll";
-import mongoose from "mongoose";
 import { color } from "../functions";
 
 const emojies = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"]
@@ -55,10 +54,6 @@ const command : SlashCommand = {
         try {
             await interaction.deferReply({ ephemeral: true })
 
-            if (mongoose.connection.readyState === 0) {
-                await interaction.editReply("Mongo is not connected!")
-                return console.log(color("text", `❌ Failed to delete message : ${color("error", "Mongo is not connected!")}`))
-            }
             if (!interaction.channel) return
 
             const buttons: ButtonBuilder[] = []
@@ -91,10 +86,10 @@ const command : SlashCommand = {
             const buttonsRow = new ActionRowBuilder<ButtonBuilder>().addComponents(buttons)
 
             const embed = new EmbedBuilder()
+                .setAuthor({ name: `${interaction.user.displayName}` || 'Default Name', iconURL: interaction.user?.avatarURL() || undefined })
                 .setTitle(`Poll's Subject: ${options[0].value?.toString().toUpperCase()}`)        
-                .setAuthor({ name: `${interaction.user.username}` || 'Default Name', iconURL: interaction.user?.avatarURL() || undefined })
                 .setFooter(
-                    { text: `${interaction.user.username} started a poll`, iconURL: undefined }
+                    { text: `poll is still ongoing until minutes ${currentMinutes}!`, iconURL: undefined }
                 )
                 .setColor("Blue")
 
@@ -104,10 +99,6 @@ const command : SlashCommand = {
                 )
             }
 
-            embed.addFields(
-                { name: " ", value: `**Poll is still ongoing until minutes ${currentMinutes}!**` }
-            )
-
             const message = await channel.send({ embeds: [embed], components: [buttonsRow] })
 
             newPoll.messageID = message.id
@@ -116,19 +107,33 @@ const command : SlashCommand = {
                 await PollModel.deleteOne({ _id: newPoll._id })
                 interaction.client.timeouts.delete(`poll-${newPoll._id}`)
 
-                if (!interaction.channel) return
+                if (!interaction.channel) return console.log(color("text", `❌ Failed to execute poll slash command : ${color("error", "channel unavailable")}`))
 
                 try {
-                    const timeoutMessage = await interaction.channel.messages.fetch(newPoll.messageID)
-
+                    const timeoutMessage = await interaction.channel.messages
+                        .fetch(newPoll.messageID)
+                        .catch((e) => console.log(color("text", `❌ Failed to fetch message : ${color("error", e.message)}`)))
+            
                     if (!timeoutMessage) return
+    
+                    const embedTimeout = timeoutMessage.embeds[0]
+                    const winnerResult = "**NONE IS A WINNER!**"
 
-                    const embeds = timeoutMessage.embeds[0]
-                    
-                    embeds.fields[embeds.fields.length - 1].value = "**POLL IS OVER! NONE IS A WINNER!**"
+                    const embed = new EmbedBuilder()
+                        .setAuthor(embedTimeout.author)
+                        .setTitle(embedTimeout.title)
+                        .setFields(embedTimeout.fields)        
+                        .setFooter(
+                            { text: "poll is over!", iconURL: undefined }
+                        )
+                        .setColor("Blue")
 
+                    embed.addFields(
+                        { name: " ", value: winnerResult }
+                    )
+    
                     await timeoutMessage.edit({
-                        embeds: [embeds],
+                        embeds: [embed],
                         components: []
                     })
                 } catch {}
@@ -139,7 +144,7 @@ const command : SlashCommand = {
             await newPoll.save()
 
             await interaction.editReply("Poll sent successfully!")
-        } catch {}
+        } catch(e) {console.log(color("text", `❌ Failed to execute poll : ${color("error", e.message)}`))}
     },
     button: async (interaction) => {
         try {
@@ -154,7 +159,12 @@ const command : SlashCommand = {
             clearTimeout(interaction.client.timeouts.get(`poll-${pollID}`))
             interaction.client.timeouts.delete(`poll-${pollID}`)
 
-            const targetMessage = await interaction.channel.messages.fetch(targetPoll.messageID)
+            const targetMessage = await interaction.channel.messages
+                .fetch(targetPoll.messageID)
+                .catch((e) => console.log(color("text", `❌ Failed to fetch message : ${color("error", e.message)}`)))
+
+            if (!targetMessage) return
+
             const targetMessageEmbed = targetMessage.embeds[0]
 
             const option = parseInt(optionString)
@@ -180,10 +190,17 @@ const command : SlashCommand = {
                             targetMessageEmbed.fields[i].value = `${emojies[i]} ${targetPoll.pollResult[i]} votes (${percentage}%)`
                         }
 
-                        targetMessageEmbed.fields[targetMessageEmbed.fields.length - 1].value = `**Poll is still ongoing until minutes ${currentMinutes}!**`
+                        const embed = new EmbedBuilder()
+                            .setAuthor(targetMessageEmbed.author)
+                            .setTitle(targetMessageEmbed.title)
+                            .setFields(targetMessageEmbed.fields)        
+                            .setFooter(
+                                { text: `poll is still ongoing until minutes ${currentMinutes}!`, iconURL: undefined }
+                            )
+                            .setColor("Blue")
 
                         await targetMessage.edit({
-                            embeds: [targetMessageEmbed],
+                            embeds: [embed],
                             components: [targetMessage.components[0]]
                         })
 
@@ -198,20 +215,33 @@ const command : SlashCommand = {
                             if (!interaction.channel || !poll) return
                 
                             try {
-                                const timeoutMessage = await interaction.channel.messages.fetch(targetPoll.messageID)
-                
+                                const timeoutMessage = await interaction.channel.messages
+                                    .fetch(targetPoll.messageID)
+                                    .catch((e) => console.log(color("text", `❌ Failed to delete message : ${color("error", e.message)}`)))
+            
                                 if (!timeoutMessage) return
                 
-                                const embeds = timeoutMessage.embeds[0]
+                                const embedTimeout = timeoutMessage.embeds[0]
                 
                                 const result = poll.pollResult
                                 const winner = result.every((val) => val === result[0]) ? -1 : Math.max(...result)
-                                const winnerResult = winner === -1 ? "THE RESULT IS TIE!" : `${emojies[winner]} ${embeds.fields[winner].name} IS A WINNER!`
-                                
-                                embeds.fields[embeds.fields.length - 1].value = `**POLL IS OVER! ${winnerResult}**`
+                                const winnerResult = winner === -1 ? "**THE RESULT IS TIE!**" : `**[${emojies[winner]}] ${embedTimeout.fields[winner].name} IS THE WINNER!**`
+
+                                const embed = new EmbedBuilder()
+                                    .setAuthor(embedTimeout.author)
+                                    .setTitle(embedTimeout.title)
+                                    .setFields(embedTimeout.fields)        
+                                    .setFooter(
+                                        { text: "poll is over!", iconURL: undefined }
+                                    )
+                                    .setColor("Blue")
+
+                                embed.addFields(
+                                    { name: " ", value: winnerResult }
+                                )
                 
                                 await timeoutMessage.edit({
-                                    embeds: [embeds],
+                                    embeds: [embed],
                                     components: []
                                 })
                             } catch {}
@@ -219,7 +249,7 @@ const command : SlashCommand = {
 
                         interaction.client.timeouts.set(`poll-${targetPoll._id}`, timeout)
 
-                        return await interaction.editReply("Your poll has been removed!")
+                        return await interaction.editReply("Your vote has been removed!")
                     }
 
                     targetPoll.pollResult[option - 1] = targetPoll.pollResult[option - 1] + 1
@@ -232,10 +262,17 @@ const command : SlashCommand = {
                         targetMessageEmbed.fields[i].value = `${emojies[i]} ${targetPoll.pollResult[i]} votes (${percentage}%)`
                     }
 
-                    targetMessageEmbed.fields[targetMessageEmbed.fields.length - 1].value = `**Poll is still ongoing until minutes ${currentMinutes}!**`
+                    const embed = new EmbedBuilder()
+                        .setAuthor(targetMessageEmbed.author)
+                        .setTitle(targetMessageEmbed.title)
+                        .setFields(targetMessageEmbed.fields)        
+                        .setFooter(
+                            { text: `poll is still ongoing until minutes ${currentMinutes}!`, iconURL: undefined }
+                        )
+                        .setColor("Blue")
 
                     await targetMessage.edit({
-                        embeds: [targetMessageEmbed],
+                        embeds: [embed],
                         components: [targetMessage.components[0]]
                     })
 
@@ -250,20 +287,33 @@ const command : SlashCommand = {
                         if (!interaction.channel || !poll) return
             
                         try {
-                            const timeoutMessage = await interaction.channel.messages.fetch(targetPoll.messageID)
+                            const timeoutMessage = await interaction.channel.messages
+                                .fetch(targetPoll.messageID)
+                                .catch((e) => console.log(color("text", `❌ Failed to delete message : ${color("error", e.message)}`)))
             
                             if (!timeoutMessage) return
             
-                            const embeds = timeoutMessage.embeds[0]
+                            const embedTimeout = timeoutMessage.embeds[0]
             
                             const result = poll.pollResult
                             const winner = result.every((val) => val === result[0]) ? -1 : Math.max(...result)
-                            const winnerResult = winner === -1 ? "THE RESULT IS TIE!" : `${emojies[winner]} ${embeds.fields[winner].name} IS A WINNER!`
-                            
-                            embeds.fields[embeds.fields.length - 1].value = `**POLL IS OVER! ${winnerResult}**`
+                            const winnerResult = winner === -1 ? "**THE RESULT IS TIE!**" : `**[${emojies[winner]}] ${embedTimeout.fields[winner].name} IS THE WINNER!**`
+
+                            const embed = new EmbedBuilder()
+                                .setAuthor(embedTimeout.author)
+                                .setTitle(embedTimeout.title)
+                                .setFields(embedTimeout.fields)        
+                                .setFooter(
+                                    { text: "poll is over!", iconURL: undefined }
+                                )
+                                .setColor("Blue")
+
+                            embed.addFields(
+                                { name: " ", value: winnerResult }
+                            )
             
                             await timeoutMessage.edit({
-                                embeds: [embeds],
+                                embeds: [embed],
                                 components: []
                             })
                         } catch {}
@@ -271,12 +321,12 @@ const command : SlashCommand = {
 
                     interaction.client.timeouts.set(`poll-${targetPoll._id}`, timeout)
 
-                    return await interaction.editReply("Poll sent successfully!")
+                    return await interaction.editReply("Your vote has been sent!")
                 }
             }
 
             await interaction.editReply("Some error occured!")
-        } catch {}
+        } catch(e) {console.log(color("text", `❌ Failed to vote in poll slash command : ${color("error", e.message)}`))}
     },
     cooldown: 2
 }

@@ -3,15 +3,11 @@ import { readdirSync } from "fs";
 import { join } from "path";
 import { color } from "../functions";
 import { BotEvent, MoonEvent } from "../types";
-import { MoonlinkNode, MoonlinkPlayer } from "moonlink.js";
+import { MoonlinkNode } from "moonlink.js";
 
 module.exports = (client: Client) => {
     let eventsDir = join(__dirname, "../events")
     let eventsMoonDir = join(__dirname, "../eventsMoon")
-
-    process.on('unhandledRejection', (error) => {
-        console.log(color("text", `❌ Unhandled promise rejection: ${color("error", error)}`))
-    })
 
     readdirSync(eventsDir).forEach(file => {
         if (!file.endsWith(".js")) return;
@@ -29,18 +25,20 @@ module.exports = (client: Client) => {
         console.log(color("text", `🌠 Successfully loaded event ${color("variable", event.name)}`))
     })
 
-    const lavalink = process.env.LAVALINK_HOST
-    if (!lavalink) return 
-
     readdirSync(eventsMoonDir).forEach(file => {
         if (!file.endsWith(".js")) return;
         let event: MoonEvent = require(`${eventsMoonDir}/${file}`).default
 
-        if (event.name === "nodeCreate" || event.name === "nodeClose" || event.name === "nodeReconnect") client.moon.on(event.name, (node: MoonlinkNode) => event.execute(node))
+        if (event.name === "nodeCreate" || event.name === "nodeReconnect") client.moon.on(event.name, (node: MoonlinkNode) => event.execute(node))
+        else if (event.name === "nodeClose") client.moon.on("nodeClose", (node, code, reason) => event.execute(node, code, reason))
         else if (event.name === "trackStart" || event.name === "trackStuck" || event.name === "trackError") client.moon.on(event.name, (player, track) => event.execute(client, player, track))
         else if (event.name === "queueEnd") client.moon.on(event.name, (player, track) => event.execute(client, player, track))
         else if (event.name === "playerDisconnect") client.moon.on("playerDisconnect", (player) => event.execute(client, player))
         
         console.log(color("text", `🌠 Successfully loaded moon event ${color("variable", event.name)}`))
+    })
+
+    process.on('unhandledRejection', (error) => {
+        console.log(color("text", `❌ Unhandled promise rejection: ${color("error", error)}`))
     })
 }

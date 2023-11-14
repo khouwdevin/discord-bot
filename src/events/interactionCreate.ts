@@ -49,18 +49,26 @@ const event : BotEvent = {
             }
         } else if (interaction.isButton()) {
             const commandString = interaction.customId.split(".")[0]
-            const command = interaction.client.slashCommands.get(commandString)
+            const slashCommand = interaction.client.slashCommands.get(commandString)
+            const command = interaction.client.commands.get(commandString)
 
-            if (!command) {
-                console.error(`No command matching ${interaction.customId} was found.`);
-                return;
+            if (slashCommand) {
+                try {
+                    if(!slashCommand.button) return;
+                    slashCommand.button(interaction);
+                } catch (error) {
+                    console.error(error);
+                }
             }
-            try {
-                if(!command.button) return;
-                command.button(interaction);
-            } catch (error) {
-                console.error(error);
+            else if (command) {
+                try {
+                    if(!command.button) return;
+                    command.button(interaction);
+                } catch (error) {
+                    console.error(error);
+                }
             }
+            else console.error(`No command matching ${interaction.customId} was found.`);
         }
     }
 }

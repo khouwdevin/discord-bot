@@ -34,6 +34,6 @@ module.exports = (client : Client) => {
         console.log(color("text", `🔥 Successfully loaded ${color("variable", data.length)} slash command(s)`))
         console.log(color("text", `🔥 Successfully loaded ${color("variable", commands.length)} command(s)`))
     }).catch(e => {
-        console.log(e)
+        console.log(color("text", `❌ Failed to rest.put : ${color("error", e.message)}`))
     })
 }

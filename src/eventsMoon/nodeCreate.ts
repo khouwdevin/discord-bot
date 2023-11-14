@@ -8,6 +8,8 @@ const event: MoonEvent = {
         console.log(
             color("text", `💪 Connected to ${color("variable", node.host)}`)
         )
+
+        node.manager.options.reconnectAtattemps = 0
     }
 }
 

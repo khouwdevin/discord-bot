@@ -1,10 +1,10 @@
 import { SlashCommandBuilder, GuildMember, PermissionFlagsBits } from "discord.js"
 import { SlashCommand } from "../types";
+import { color } from "../functions";
 
 const command : SlashCommand = {
     command: new SlashCommandBuilder()
         .setName("afk")
-        .setDescription("Tell your friend if you are going to AFK.")
         .addBooleanOption(options => {
             return options
                 .setName("afk")
@@ -18,11 +18,14 @@ const command : SlashCommand = {
                 .setMinValue(1)
                 .setRequired(false)
         })
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+        .setDefaultMemberPermissions(PermissionFlagsBits.ChangeNickname)
+        .setDescription("Tell your friend if you are going to AFK.")
     ,
     execute: async (interaction) => {
         try {
             await interaction.deferReply({ ephemeral: true })
+
+            if (!interaction.channel) return console.log(color("text", `❌ Failed to execute AFK slash command : ${color("error", "channel unavailable")}`))
 
             const options = interaction.options.data
             const minutes: number = options[1].value as number ? options[1].value as number : 0
@@ -33,16 +36,16 @@ const command : SlashCommand = {
             const isAFK = options[0].value as boolean
 
             if (isAFK){
-                member.setNickname(`[AFK]${member.nickname}`).catch((e) => console.log(`❌ Set nickname in AFK : ${e.message}`))
+                member.setNickname(`[AFK]${member.user.displayName}`).catch(() => {})
                 await interaction.channel?.send(`${member} is AFK for ${userminutesafk}`)
             }
             else{
-                member.setNickname(member.nickname?.replace("[AFK]", "") || member.nickname).catch((e) => console.log(`❌ Set nickname in AFK : ${e.message}`))
+                member.setNickname(member.user.displayName.replace("[AFK]", "")).catch((e) => {})
                 await interaction.channel?.send(`${member} is not AFK`)
             }
 
             await interaction.editReply("Your command is successfully ran!")
-        } catch {}
+        } catch(e) {console.log(color("text", `❌ Failed to execute AFK slash command : ${color("error", e.message)}`))}
     }
 }
 
